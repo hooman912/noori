@@ -592,44 +592,11 @@ async function openDetail(id) {
       });
     }
 
-    // بخش ۶ - اسناد (از نوع شرکت)
-    var docList = [];
-    if(s.type==='legal'){
-      docList=[
-        {label:'اساسنامه',val:'اساسنامه '+(s.name||'')},
-        {label:'آگهی تاسیس',val:'آگهی تاسیس '+(s.name||'')},
-        {label:'آگهی تغییرات هیئت مدیره',val:'آگهی تغییرات '+(s.name||'')},
-        {label:'رتبه و گرید',val:s.rank||''},
-        {label:'گواهینامه اقتصادی',val:'شناسه: '+(s.eco_id||'')},
-        {label:'فهرست کارکنان کلیدی',val:'فهرست کارکنان '+(s.name||'')},
-        {label:'نمونه امضا مدیرعامل',val:'امضا: '+(members[0]?(members[0].name+' '+(members[0].lastname||'')):'مدیرعامل')},
-      ];
-    } else if(s.type==='real'){
-      docList=[
-        {label:'کارت ملی',val:'کارت ملی - '+(s.name||'')+' - کد: '+(s.nat_id||'')},
-        {label:'شناسنامه',val:'شناسنامه - '+(s.name||'')},
-        {label:'مدرک تحصیلی',val:'مدرک تحصیلی - '+(s.name||'')},
-        {label:'نمونه امضا',val:'امضا: '+(s.name||'')},
-      ];
-    } else if(s.type==='store'){
-      docList=[
-        {label:'جواز کسب',val:'جواز کسب - '+(s.name||'')},
-        {label:'کارت ملی مالک',val:'کارت ملی مالک - '+(members[0]?(members[0].name+' '+(members[0].lastname||'')):'مالک')+(s.nat_id?' - کد: '+s.nat_id:'')},
-        {label:'سند یا اجاره‌نامه',val:'سند '+(s.name||'')},
-      ];
-    } else {
-      docList=[
-        {label:'اساسنامه / Articles of Association',val:'اساسنامه '+(s.name||'')},
-        {label:'گواهی ثبت / Registration Certificate',val:'Registration - '+(s.name||'')},
-        {label:'مجوز فعالیت / Business License',val:'License - '+(s.name||'')},
-      ];
+    // بخش ۶ - اسناد (فقط بررسی منابع)
+    var sec6 = '';
+    if(curUser.isAdmin){
+      sec6 = '<div id="vsDocs_'+id+'" style="text-align:center;color:#9ca3af;font-size:12px;padding:10px">⏳ در حال بارگذاری اسناد...</div>';
     }
-    var sec6 = docList.map(function(d){
-      return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f3f4f6">'
-        +'<div style="width:30px;height:30px;background:linear-gradient(135deg,#ede9fe,#ddd6fe);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">📄</div>'
-        +'<div><div style="font-size:12px;font-weight:900;color:#374151">'+d.label+'</div>'
-        +'<div style="font-size:11px;color:#6b7280;font-weight:700;margin-top:1px">'+d.val+'</div></div></div>';
-    }).join('');
 
     // بخش ۷ - حوزه فعالیت
     var sec7 = '';
@@ -656,7 +623,7 @@ async function openDetail(id) {
       + dsec('🏛️ اطلاعات ثبتی','linear-gradient(135deg,#7c3aed,#6d28d9)',sec3)
       + dsec('🏦 اطلاعات بانکی','linear-gradient(135deg,#047857,#065f46)',sec4)
       + (sec5?dsec('👥 اعضای هیئت مدیره','linear-gradient(135deg,#b45309,#92400e)',sec5):'')
-      + dsec('📁 اسناد بارگذاری شده','linear-gradient(135deg,#6d28d9,#5b21b6)',sec6)
+      + (curUser.isAdmin ? dsec('📁 اسناد بارگذاری شده','linear-gradient(135deg,#6d28d9,#5b21b6)',sec6) : '')
       + (sec7?dsec('🏭 حوزه‌های فعالیت','linear-gradient(135deg,#be185d,#9d174d)',sec7):'');
 
     var memHtml = '';
@@ -769,6 +736,9 @@ async function openDetail(id) {
       (evals.length && s.status !== 'pending' ? '<div class="st">تاریخچه ارزیابی‌ها (' + purchaseCount + ')</div>' + histHtml : '') +
       adminBtns;
 
+    // بارگذاری اسناد واقعی برای بررسی منابع
+    if(curUser.isAdmin) loadVsDocs(id);
+
   } catch(e) {
     document.getElementById("modalBody").innerHTML = '<div style="color:red;font-weight:700">خطا در بارگذاری: ' + e.message + '</div>';
   }
@@ -791,6 +761,29 @@ async function editField(suppId, field) {
     alert("✅ " + label + " با موفقیت بروزرسانی شد");
     openDetail(suppId);
   } catch(e) { alert("خطا: " + e.message); }
+}
+
+async function loadVsDocs(suppId){
+  if(!sb || !curUser.isAdmin) return;
+  try{
+    var res = await sb.from("supplier_docs").select("*").eq("supplier_id", suppId);
+    var el = document.getElementById("vsDocs_"+suppId);
+    if(!el) return;
+    if(!res.data || res.data.length===0){
+      el.innerHTML = '<div style="text-align:center;color:#9ca3af;font-size:12px;padding:10px">هنوز سندی آپلود نشده</div>';
+      return;
+    }
+    var html = '';
+    res.data.forEach(function(doc){
+      html += '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f3f4f6">'
+        +'<div style="width:30px;height:30px;background:linear-gradient(135deg,#ede9fe,#ddd6fe);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">📄</div>'
+        +'<div style="flex:1"><div style="font-size:12px;font-weight:900;color:#374151">'+doc.doc_type+'</div>'
+        +'<div style="font-size:11px;color:#6b7280;font-weight:700;margin-top:1px">'+doc.file_name+'</div></div>'
+        +'<a href="'+doc.file_url+'" target="_blank" style="background:#1e3a5f;color:white;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:900;cursor:pointer;text-decoration:none">👁️ مشاهده</a>'
+        +'</div>';
+    });
+    el.innerHTML = html;
+  } catch(e){ console.log("vs docs:", e); }
 }
 
 async function submitComment(suppId) {

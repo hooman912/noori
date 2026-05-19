@@ -523,6 +523,104 @@ function showDashboard(s){
   var d=document.createElement("div");
   d.style="min-height:100vh;background:linear-gradient(135deg,#f0f9ff,#fef9ec);padding:16px";
 
+  var s1=row('🏢','نام',s.name)
+    +row('🆔','کد','<span style="letter-spacing:2px">'+((s.id||'').replace(/^PGFH-/,'NOPC-'))+'</span>',true)
+    +row('⚙️','نوع',typeLabel)
+    +row('📊','وضعیت','<span style="color:'+sc+'">'+sl+'</span>')
+    +row('📅','سال تاسیس',s.founded_year)
+    +row('🏆','رتبه پیمانکاری',s.rank)
+    +row('📜','گواهینامه ISO',s.iso)
+    +row('🏭','دسته فعالیت',s.category)
+    +row('🗺️','استان',s.province)
+    +(s.avg_score?row('⭐','امتیاز میانگین',s.avg_score+' از ۵'):'');
+
+  var s2=row('📱','موبایل',s.phone,true)
+    +row('📧','ایمیل',s.email)
+    +row('📮','کد پستی',s.postal_code,true)
+    +row('🏠','آدرس',s.address);
+
+  var s3=row('🪪','شناسه ملی',s.nat_id,true)
+    +row('📋','شماره ثبت',s.reg_no,true)
+    +row('💼','شناسه اقتصادی',s.eco_id,true);
+
+  var s4=row('🏦','بانک',s.bank_name)
+    +row('💳','شماره حساب',s.bank_account,true)
+    +row('🔢','شماره شبا','IR'+(s.sheba||''),true);
+
+  var s5='';
+  if(s.members&&s.members.length){
+    s.members.forEach(function(m){
+      s5+='<div style="background:#f8fafc;border-radius:10px;padding:12px;margin-bottom:8px;border-right:3px solid #1e3a5f">'
+        +'<div style="font-size:12px;font-weight:900;color:#1e3a5f;margin-bottom:6px">👤 '+m.name+(m.lastname?' '+m.lastname:'')+'</div>'
+        +row('🪪','کد ملی',m.nat,true)
+        +'<div style="font-size:11px;color:#6b7280;font-weight:700;margin-top:4px">🎖️ نقش: '+m.role+'</div>'
+        +'</div>';
+    });
+  }
+
+  var s7='';
+  if(s.activities&&typeof s.activities==='object'&&Object.keys(s.activities).length){
+    Object.keys(s.activities).forEach(function(k){
+      var subs=s.activities[k];
+      s7+='<div style="margin-bottom:8px"><div style="font-size:12px;font-weight:900;color:#1e3a5f;margin-bottom:4px">📌 '+k+'</div>';
+      if(Array.isArray(subs)&&subs.length){
+        s7+='<div style="display:flex;flex-wrap:wrap;gap:4px">';
+        subs.forEach(function(sub){s7+='<span style="background:#ede9fe;color:#6d28d9;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700">'+sub+'</span>';});
+        s7+='</div>';
+      }
+      s7+='</div>';
+    });
+  } else if(s.category){
+    s7=row('🏭','دسته اصلی',s.category);
+  }
+
+  d.innerHTML='<div style="max-width:600px;margin:0 auto">'
+    +'<div style="background:linear-gradient(135deg,#1e3a5f,#0f2027);border-radius:20px;padding:22px;color:white;margin-bottom:14px;text-align:center">'
+    +'<img src="'+logo+'" style="width:52px;height:52px;border-radius:10px;margin:0 auto 10px;display:block">'
+    +'<div style="font-size:18px;font-weight:900">'+s.name+'</div>'
+    +'<div style="font-size:10px;opacity:.6;margin-top:4px;direction:ltr">'+((s.id||'').replace(/^PGFH-/,'NOPC-'))+'</div></div>'
+    +section('📋 اطلاعات اولیه','linear-gradient(135deg,#1e3a5f,#2d5a8e)',s1)
+    +section('📞 اطلاعات ارتباطی','linear-gradient(135deg,#0891b2,#0e7490)',s2)
+    +section('🏛️ اطلاعات ثبتی','linear-gradient(135deg,#7c3aed,#6d28d9)',s3)
+    +section('🏦 اطلاعات بانکی','linear-gradient(135deg,#047857,#065f46)',s4)
+    +(s5?section('👥 اعضای هیئت مدیره','linear-gradient(135deg,#b45309,#92400e)',s5):'')
+    +'<div id="docsSection">'+section('📁 اسناد بارگذاری شده','linear-gradient(135deg,#6d28d9,#5b21b6)','<div style="text-align:center;color:#9ca3af;font-size:12px;padding:10px">⏳ در حال بارگذاری...</div>')+'</div>'
+    +(s7?section('🏭 حوزه‌های فعالیت','linear-gradient(135deg,#be185d,#9d174d)',s7):'')
+    +'<div style="display:flex;gap:10px;margin-top:4px">'
+    +'<button onclick="location.reload()" style="flex:1;padding:13px;background:#f3f4f6;border:none;border-radius:12px;font-size:14px;font-weight:900;cursor:pointer">🚪 خروج</button>'
+    +'</div></div>';
+
+  document.body.appendChild(d);
+
+  // بارگذاری فایل‌های واقعی از Supabase
+  loadSupplierDocs(s.id, d);
+}
+
+async function loadSupplierDocs(suppId, container){
+  if(!sb){ return; }
+  try{
+    var res = await sb.from("supplier_docs").select("*").eq("supplier_id", suppId);
+    var docsEl = container.querySelector("#docsSection");
+    if(!docsEl) return;
+
+    if(!res.data || res.data.length===0){
+      docsEl.innerHTML = section('📁 اسناد بارگذاری شده','linear-gradient(135deg,#6d28d9,#5b21b6)','<div style="text-align:center;color:#9ca3af;font-size:12px;padding:10px">هنوز سندی آپلود نشده</div>');
+      return;
+    }
+
+    var s6='';
+    res.data.forEach(function(doc){
+      s6+='<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f3f4f6">'
+        +'<div style="width:34px;height:34px;background:linear-gradient(135deg,#ede9fe,#ddd6fe);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">📄</div>'
+        +'<div style="flex:1"><div style="font-size:12px;font-weight:900;color:#374151">'+doc.doc_type+'</div>'
+        +'<div style="font-size:11px;color:#6b7280;font-weight:700;margin-top:2px">'+doc.file_name+'</div></div>'
+        +'<a href="'+doc.file_url+'" target="_blank" style="background:#1e3a5f;color:white;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:900;cursor:pointer;text-decoration:none">👁️ مشاهده</a>'
+        +'</div>';
+    });
+    docsEl.innerHTML = section('📁 اسناد بارگذاری شده','linear-gradient(135deg,#6d28d9,#5b21b6)',s6);
+  } catch(e){ console.log("load docs:", e); }
+}
+
   // بخش ۱ - اطلاعات اولیه
   var s1=row('🏢','نام',s.name)
     +row('🆔','کد','<span style="letter-spacing:2px">'+((s.id||'').replace(/^PGFH-/,'NOPC-'))+'</span>',true)
@@ -790,13 +888,80 @@ function step3(c){
   c.innerHTML=h;
 }
 
-function docUp(input){
+// ذخیره URL فایل‌های آپلود شده
+var _uploadedDocs = {};
+
+async function docUp(input){
   var dt=input.getAttribute("data-dt"),di=input.getAttribute("data-di"),isAI=input.getAttribute("data-ai")==="1",isSig=input.getAttribute("data-sig")==="1";
   var el=document.getElementById("dsts"+di);if(!input.files[0])return;
-  var fname=input.files[0].name,fsize=input.files[0].size;
-  if(isSig){el.textContent="🔍 در حال تشخیص امضا...";el.className="dsts chk";setTimeout(function(){if(fsize>3000){el.textContent="✅ امضا شناسایی شد: "+fname;el.className="dsts ok";}else{el.textContent="❌ امضا شناسایی نشد - تصویر واضح‌تر آپلود کنید";el.className="dsts err";input.value="";}},1500);return;}
-  if(isAI){el.textContent="🤖 در حال تحلیل سند...";el.className="dsts chk";var reader=new FileReader();reader.onload=function(ev){var b64=ev.target.result.split(",")[1],mt=input.files[0].type||"image/jpeg";fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:80,messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:mt,data:b64}},{type:"text",text:"نوع سند مورد انتظار: "+dt+". آیا این سند با نوع مورد انتظار مطابقت دارد؟ فقط بله یا خیر و یک جمله."}]}]})}).then(function(r){return r.json();}).then(function(data){var txt=data.content&&data.content[0]?data.content[0].text:"";var no=txt.indexOf("خیر")===0||txt.indexOf("نه")===0;if(no){el.textContent="⚠️ سند اشتباه: "+txt;el.className="dsts err";input.value="";}else{el.textContent="✅ تایید شد: "+fname;el.className="dsts ok";}}).catch(function(){el.textContent="✅ بارگذاری شد: "+fname;el.className="dsts ok";});};reader.readAsDataURL(input.files[0]);return;}
-  el.textContent="✅ بارگذاری شد: "+fname;el.className="dsts ok";
+  var file=input.files[0],fname=file.name,fsize=file.size;
+
+  // چک حجم - حداکثر 2 مگابایت
+  if(fsize>2*1024*1024){el.textContent="❌ حجم فایل بیش از ۲ مگابایت است";el.className="dsts err";input.value="";return;}
+
+  if(isSig){
+    el.textContent="🔍 در حال تشخیص امضا...";el.className="dsts chk";
+    setTimeout(function(){
+      if(fsize>3000){
+        // آپلود به Storage
+        uploadToStorage(file, di, dt, function(url){
+          if(url) _uploadedDocs[di]={label:dt,url:url,name:fname};
+          el.textContent="✅ امضا شناسایی شد: "+fname;el.className="dsts ok";
+        });
+      } else {
+        el.textContent="❌ امضا شناسایی نشد - تصویر واضح‌تر آپلود کنید";el.className="dsts err";input.value="";
+      }
+    },1500);
+    return;
+  }
+
+  if(isAI){
+    el.textContent="🤖 در حال تحلیل سند...";el.className="dsts chk";
+    var reader=new FileReader();
+    reader.onload=function(ev){
+      var b64=ev.target.result.split(",")[1],mt=file.type||"image/jpeg";
+      fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:80,messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:mt,data:b64}},{type:"text",text:"نوع سند مورد انتظار: "+dt+". آیا این سند با نوع مورد انتظار مطابقت دارد؟ فقط بله یا خیر و یک جمله."}]}]})})
+      .then(function(r){return r.json();})
+      .then(function(data){
+        var txt=data.content&&data.content[0]?data.content[0].text:"";
+        var no=txt.indexOf("خیر")===0||txt.indexOf("نه")===0;
+        if(no){el.textContent="⚠️ سند اشتباه: "+txt;el.className="dsts err";input.value="";}
+        else{
+          uploadToStorage(file, di, dt, function(url){
+            if(url) _uploadedDocs[di]={label:dt,url:url,name:fname};
+            el.textContent="✅ تایید شد: "+fname;el.className="dsts ok";
+          });
+        }
+      })
+      .catch(function(){
+        uploadToStorage(file, di, dt, function(url){
+          if(url) _uploadedDocs[di]={label:dt,url:url,name:fname};
+          el.textContent="✅ بارگذاری شد: "+fname;el.className="dsts ok";
+        });
+      });
+    };
+    reader.readAsDataURL(file);
+    return;
+  }
+
+  // آپلود معمولی
+  el.textContent="⏳ در حال آپلود...";el.className="dsts chk";
+  uploadToStorage(file, di, dt, function(url){
+    if(url){ _uploadedDocs[di]={label:dt,url:url,name:fname}; el.textContent="✅ آپلود شد: "+fname; el.className="dsts ok"; }
+    else { el.textContent="✅ بارگذاری شد: "+fname; el.className="dsts ok"; }
+  });
+}
+
+async function uploadToStorage(file, di, label, cb){
+  if(!sb){ cb(null); return; }
+  try{
+    var ext = file.name.split('.').pop();
+    var path = 'docs/' + Date.now() + '_' + di + '.' + ext;
+    var res = await sb.storage.from('supplier-docs').upload(path, file, {cacheControl:'3600', upsert:true});
+    if(res.error){ cb(null); return; }
+    var pub = sb.storage.from('supplier-docs').getPublicUrl(path);
+    cb(pub.data ? pub.data.publicUrl : null);
+  } catch(e){ cb(null); }
 }
 
 function step4(c){
@@ -1039,6 +1204,15 @@ async function finalReg(){
       var suppData={id:trk,name:name.trim()||"نامشخص",type:selType,phone:mob,email:em,address:addr,postal_code:post,nat_id:nat,reg_no:reg,eco_id:eco,bank_name:bank,bank_account:account,sheba:sheba,founded_year:year,rank:rank,iso:iso,activities:JSON.stringify(selActs),status:"pending",is_blacklist:false,fingerprint_hash:(window._fpHash||""),client_ip:(window._clientIP||"")};
       var res=await sb.from("suppliers").insert(suppData);
       if(res.error)console.error("Supabase error:",res.error);
+
+      // ذخیره فایل‌های آپلود شده
+      var docKeys=Object.keys(_uploadedDocs);
+      for(var dki=0;dki<docKeys.length;dki++){
+        var dk=docKeys[dki],doc=_uploadedDocs[dk];
+        try{
+          await sb.from("supplier_docs").insert({supplier_id:trk,doc_type:doc.label,file_url:doc.url,file_name:doc.name});
+        }catch(ed){console.log("doc save:",ed);}
+      }
       var mnatEls=document.querySelectorAll('[id^="mnat"]');
       for(var mi=0;mi<mnatEls.length;mi++){
         var idx=mnatEls[mi].id.replace("mnat","");
