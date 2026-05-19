@@ -52,20 +52,26 @@ button,input,select,textarea{font-family:"Vazirmatn",Tahoma,sans-serif;font-weig
 .ubadge.adm{background:linear-gradient(135deg,var(--gold),var(--gold-d));color:white}
 .logout{background:none;border:1.5px solid var(--g2);border-radius:8px;padding:6px 12px;font-size:12px;color:var(--g5);cursor:pointer}
 
-.stats{display:flex;gap:12px;padding:16px 24px;background:white;border-bottom:1px solid var(--g);overflow-x:auto}
-.sc{flex:1;min-width:120px;background:#f9fafb;border-radius:12px;padding:14px 16px;border:1.5px solid var(--g);cursor:pointer;transition:.2s}
-.sc:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.1)}
+.stats{display:flex;gap:8px;padding:12px 24px;background:white;border-bottom:1px solid var(--g);overflow-x:auto}
+.sc{flex:1;min-width:90px;background:#f9fafb;border-radius:10px;padding:10px 12px;border:1.5px solid var(--g);cursor:pointer;transition:.2s;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.sc:hover{transform:translateY(-3px);box-shadow:0 6px 16px rgba(0,0,0,.13)}
 .sc.gold{background:#fffbeb;border-color:#fde68a}
 .sc.green{background:#f0fdf4;border-color:#bbf7d0}
 .sc.red{background:#fef2f2;border-color:#fecaca}
-.sn{font-size:24px;font-weight:900;color:var(--g8)}
+.sc.black{background:#1a1a1a;border-color:#000}
+.sc.darkred{background:#fef2f2;border-color:#fca5a5}
+.sn{font-size:20px;font-weight:900;color:var(--g8)}
 .sc.gold .sn{color:var(--gold-d)}
 .sc.green .sn{color:var(--green)}
-.sc.red .sn{color:var(--red)}
-.sl{font-size:11px;color:var(--g5);margin-top:2px;font-weight:700}
+.sc.red .sn{color:#dc2626}
+.sc.black .sn{color:white}
+.sc.darkred .sn{color:#dc2626}
+.sl{font-size:10px;color:var(--g5);margin-top:2px;font-weight:700}
+.sc.black .sl{color:rgba(255,255,255,.7)}
 
 .tabs{display:flex;gap:4px;padding:12px 24px;background:white;border-bottom:1px solid var(--g);overflow-x:auto}
-.tab{padding:8px 16px;border-radius:8px;border:none;font-size:13px;font-weight:900;background:none;color:var(--g5);white-space:nowrap;cursor:pointer}
+.tab{padding:8px 16px;border-radius:8px;border:none;font-size:13px;font-weight:900;background:none;color:var(--g5);white-space:nowrap;cursor:pointer;transition:transform .2s}
+.tab:hover{transform:scale(1.08)}
 .tab.active{background:var(--gold);color:white}
 
 .content{padding:20px 24px;max-width:1400px;margin:0 auto}
@@ -95,9 +101,10 @@ tr.bl .cn{color:var(--red)}
 .badge.lo{background:#fee2e2;color:#991b1b}
 .badge.pend{background:#dbeafe;color:#1e40af}
 .badge.appr{background:#d1fae5;color:#065f46}
-.badge.rej{background:#fee2e2;color:#991b1b}
+.badge.rej{background:#dc2626;color:white;font-weight:900}
+.badge.bl-badge{background:#1a1a1a;color:white;font-weight:900}
 .stars{color:var(--gold);font-size:12px}
-.blb{background:#fee2e2;color:var(--red);border:1px solid #fca5a5;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:900}
+.blb{background:#1a1a1a;color:white;border:1px solid #000;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:900}
 .pgn{display:flex;gap:6px;margin-top:16px;justify-content:center;flex-wrap:wrap}
 .pb{padding:7px 12px;border-radius:8px;border:1.5px solid var(--g2);background:white;font-size:13px;font-weight:700;cursor:pointer}
 .pb.active{background:var(--gold);border-color:var(--gold);color:white}
@@ -412,7 +419,8 @@ function renderStats() {
     '<div class="sc gold" onclick="filterByStat(\'\')" style="cursor:pointer;' + (!activeFilter ? 'box-shadow:0 0 0 3px #e6a817;' : '') + '"><div class="sn">' + total + '</div><div class="sl">کل تامین‌کنندگان</div></div>' +
     '<div class="sc" onclick="filterByStat(\'pending\')" style="cursor:pointer;' + (activeFilter==="pending" ? 'box-shadow:0 0 0 3px #3b82f6;background:#dbeafe;' : '') + '"><div class="sn">' + pend + '</div><div class="sl">در انتظار تایید</div></div>' +
     '<div class="sc green" onclick="filterByStat(\'approved\')" style="cursor:pointer;' + (activeFilter==="approved" ? 'box-shadow:0 0 0 3px #10b981;' : '') + '"><div class="sn">' + appr + '</div><div class="sl">تایید شده</div></div>' +
-    '<div class="sc red" onclick="filterByStat(\'blacklist\')" style="cursor:pointer;' + (activeFilter==="blacklist" ? 'box-shadow:0 0 0 3px #ef4444;' : '') + '"><div class="sn">' + bl + '</div><div class="sl">لیست سیاه</div></div>';
+    '<div class="sc darkred" onclick="filterByStat(\'rejected\')" style="cursor:pointer;' + (activeFilter==="rejected" ? 'box-shadow:0 0 0 3px #dc2626;' : '') + '"><div class="sn">' + rej + '</div><div class="sl">رد شده</div></div>' +
+    '<div class="sc black" onclick="filterByStat(\'blacklist\')" style="cursor:pointer;' + (activeFilter==="blacklist" ? 'box-shadow:0 0 0 3px #000;' : '') + '"><div class="sn">' + bl + '</div><div class="sl">🚫 لیست سیاه</div></div>';
 }
 
 function filterByStat(type) {
