@@ -359,9 +359,7 @@ try { if(typeof supabase !== "undefined") sb = supabase.createClient(SB_URL, SB_
 var regData = {nats:[], posts:[], phones:[], emails:[]};
 
 async function loadRegData() {
-  // حداکثر ۵ ثانیه صبر کن
-  var timeout = setTimeout(function(){ document.getElementById("loadingOverlay").style.display = "none"; }, 5000);
-  if (!sb) { clearTimeout(timeout); document.getElementById("loadingOverlay").style.display = "none"; return; }
+  if (!sb) { document.getElementById("loadingOverlay").style.display = "none"; return; }
   try {
     var res = await sb.from("suppliers").select("nat_id,postal_code,phone,email").eq("is_blacklist",false);
     if (res.data) {
@@ -380,7 +378,6 @@ async function loadRegData() {
       });
     }
   } catch(e) { console.error("loadRegData error:", e); }
-  clearTimeout(timeout);
   document.getElementById("loadingOverlay").style.display = "none";
 }
 
